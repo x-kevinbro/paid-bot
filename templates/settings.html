@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>⚙️ Bot Settings</h2>
+    
+    <form method="POST" action="{{ url_for('update_settings') }}">
+        <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">🤖 Bot Configuration</h3>
+        
+        <div class="form-group">
+            <label>Bot Token</label>
+            <input type="text" name="telegram_bot_token" value="{{ config.get('telegram_bot_token', '') }}" required>
+            <small>Get this from @BotFather on Telegram</small>
+        </div>
+
+        <div class="form-group">
+            <label>Currency</label>
+            <input type="text" name="currency" value="{{ config.get('currency', 'LKR') }}" required>
+            <small>Currency symbol or code (USD, LKR, EUR, etc.)</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 2rem;">💾 Save Settings</button>
+    </form>
+
+    <div style="margin-top: 3rem; padding: 1.5rem; background: var(--code-bg); border-radius: 8px; border-left: 4px solid var(--accent-solid);">
+        <h4 style="margin-bottom: 1rem; color: var(--text-primary);">ℹ️ Additional Settings</h4>
+        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">• <strong>Payment Methods:</strong> Configure in the <a href="{{ url_for('payment_methods') }}" style="color: var(--accent-solid);">Payment Methods</a> section</p>
+        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">• <strong>Packages:</strong> Configure subscription durations in the <a href="{{ url_for('packages') }}" style="color: var(--accent-solid);">Packages</a> section</p>
+        <p style="color: var(--text-secondary); margin-bottom: 0;">• <strong>Dashboard Access:</strong> Login using codes from the Telegram bot (send /active)</p>
+    </div>
+</div>
+{% endblock %}

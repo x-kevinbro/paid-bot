@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">Dashboard Overview</h2>
+        <p style="color: var(--text-secondary); margin:0;">Realtime system snapshot for your bot operations.</p>
+    </div>
+    <a href="{{ url_for('system_settings') }}" class="btn btn-primary">⚙️ System Settings</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <h3>{{ stats.total_packages }}</h3>
+        <p>Total Packages</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_isps }}</h3>
+        <p>ISP Providers</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_isp_packages }}</h3>
+        <p>ISP Packages</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_locations }}</h3>
+        <p>Total Locations</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_panels }}</h3>
+        <p>Panels</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.pending_orders }}</h3>
+        <p>Pending Orders</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.approved_orders }}</h3>
+        <p>Approved Orders</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.rejected_orders }}</h3>
+        <p>Rejected Orders</p>
+    </div>
+    <div class="stat-card">
+        <h3>{{ stats.total_orders }}</h3>
+        <p>Total Orders</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Quick Config Info</h3>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin-top:1rem;">
+        <div style="padding:1rem; border:1px solid var(--surface-border); border-radius:12px; background:var(--code-bg);">
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.35rem;">Bot Token</div>
+            <div style="font-weight:600; color:var(--text-primary);">{{ config.telegram_bot_token[:20] }}...</div>
+        </div>
+        <div style="padding:1rem; border:1px solid var(--surface-border); border-radius:12px; background:var(--code-bg);">
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.35rem;">Currency</div>
+            <div style="font-weight:600; color:var(--text-primary);">{{ config.currency }}</div>
+        </div>
+        <div style="padding:1rem; border:1px solid var(--surface-border); border-radius:12px; background:var(--code-bg);">
+            <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.35rem;">Subscription Duration</div>
+            <div style="font-weight:600; color:var(--text-primary);">{{ config.subscription_duration }} days</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

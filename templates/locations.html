@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">Server Locations</h2>
+        <p style="color: var(--text-secondary); margin:0;">Map location IDs, inbound tags, and assigned panels.</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">Add Location</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Location List</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Inbound Tag</th>
+                <th>Primary Panel</th>
+                <th>Backup Panel</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for location in locations %}
+            <tr>
+                <td>{{ location.id }}</td>
+                <td>{{ location.name }}</td>
+                <td>{{ location.inbound_tag }}</td>
+                <td>Panel {{ location.panel_id }}</td>
+                <td>
+                    {% if location.backup_panel_id %}
+                    Panel {{ location.backup_panel_id }}
+                    {% else %}
+                    <span style="color: var(--text-secondary);">Not set</span>
+                    {% endif %}
+                </td>
+                <td>{{ location.description }}</td>
+                <td>
+                    <button class="btn btn-warning" onclick='showEditModal({{ location.id|tojson }}, {{ location.name|tojson }}, {{ location.inbound_tag|tojson }}, {{ location.panel_id|tojson }}, {{ location.backup_panel_id|default(None)|tojson }}, {{ location.description|default('', true)|tojson }})'>Edit</button>
+                    <form method="POST" action="{{ url_for('delete_location', location_id=location.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this location?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if location_issues and location_issues|length > 0 %}
+<div class="card">
+    <h3 style="margin-top:0;">Smart Resolver Suggestions</h3>
+    <p style="color: var(--text-secondary); margin: 0 0 1rem 0;">Orders with legacy/invalid location IDs detected. Apply suggested fixes with one click.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Current ID</th>
+                <th>Suggested ID</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for issue in location_issues %}
+            <tr>
+                <td>{{ issue.order_id }}</td>
+                <td>{{ issue.current_location_id }}</td>
+                <td><span class="badge badge-neutral">{{ issue.suggested_location_id }}</span></td>
+                <td>{{ issue.status }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('fix_order_location', order_id=issue.order_id) }}" style="display:inline;">
+                        <input type="hidden" name="suggested_location_id" value="{{ issue.suggested_location_id }}">
+                        <button type="submit" class="btn btn-primary">Apply Fix</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Add Location Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Location</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_location') }}">
+            <div class="form-group">
+                <label>Location ID</label>
+                <input type="text" name="id" required>
+            </div>
+            <div class="form-group">
+                <label>Name (with flag emoji)</label>
+                <input type="text" name="name" placeholder="🇺🇸 USA - New York" required>
+            </div>
+            <div class="form-group">
+                <label>Inbound Tag</label>
+                <input type="text" name="inbound_tag" placeholder="INBOUND_US_NY" required>
+            </div>
+            <div class="form-group">
+                <label>Primary Panel</label>
+                <select name="panel_id" required>
+                    {% for panel in panels %}
+                    <option value="{{ panel.id }}">{{ panel.name }} (ID: {{ panel.id }})</option>
+                    {% endfor %}
+                </select>
+                <small style="display:block; margin-top:0.5rem; color: var(--text-secondary);">This panel is used first for provisioning.</small>
+            </div>
+            <div class="form-group">
+                <label>Backup Panel</label>
+                <select name="backup_panel_id">
+                    <option value="">No explicit backup</option>
+                    {% for panel in panels %}
+                    <option value="{{ panel.id }}">{{ panel.name }} (ID: {{ panel.id }})</option>
+                    {% endfor %}
+                </select>
+                <small style="display:block; margin-top:0.5rem; color: var(--text-secondary);">Used second when auto failover is enabled. If left empty, the bot falls back to the remaining panels in config order.</small>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Location</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Location Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Location</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Name (with flag emoji)</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>Inbound Tag</label>
+                <input type="text" name="inbound_tag" id="edit_inbound_tag" required>
+            </div>
+            <div class="form-group">
+                <label>Primary Panel</label>
+                <select name="panel_id" id="edit_panel_id" required>
+                    {% for panel in panels %}
+                    <option value="{{ panel.id }}">{{ panel.name }} (ID: {{ panel.id }})</option>
+                    {% endfor %}
+                </select>
+                <small style="display:block; margin-top:0.5rem; color: var(--text-secondary);">This panel is used first for provisioning.</small>
+            </div>
+            <div class="form-group">
+                <label>Backup Panel</label>
+                <select name="backup_panel_id" id="edit_backup_panel_id">
+                    <option value="">No explicit backup</option>
+                    {% for panel in panels %}
+                    <option value="{{ panel.id }}">{{ panel.name }} (ID: {{ panel.id }})</option>
+                    {% endfor %}
+                </select>
+                <small style="display:block; margin-top:0.5rem; color: var(--text-secondary);">Used second when auto failover is enabled. If left empty, the bot falls back to the remaining panels in config order.</small>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" id="edit_description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Location</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(id, name, inbound_tag, panel_id, backup_panel_id, description) {
+    console.log('Opening edit modal for location:', id, name, inbound_tag, panel_id, backup_panel_id, description);
+    document.getElementById('editForm').action = '/locations/edit/' + encodeURIComponent(id);
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_inbound_tag').value = inbound_tag;
+    document.getElementById('edit_panel_id').value = panel_id;
+    document.getElementById('edit_backup_panel_id').value = backup_panel_id || '';
+    document.getElementById('edit_description').value = description;
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal should be visible now');
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

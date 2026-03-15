@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">ISP Providers</h2>
+        <p style="color: var(--text-secondary); margin:0;">Manage network providers and linked package groups.</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">Add ISP Provider</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Provider List</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Packages</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for isp in isps %}
+            <tr>
+                <td><code>{{ isp.id }}</code></td>
+                <td>{{ isp.name }}</td>
+                <td>{{ isp.description }}</td>
+                <td>
+                    <span class="badge badge-neutral">
+                        {{ isp.packages|length if isp.packages else 0 }} packages
+                    </span>
+                    <a href="{{ url_for('isp_packages', isp_id=isp.id) }}" class="btn btn-info" style="margin-left: 10px;">Manage</a>
+                </td>
+                <td>
+                    <button class="btn btn-warning" onclick="showEditModal('{{ isp.id }}', '{{ isp.name }}', '{{ isp.description }}')">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_isp', isp_id=isp.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this ISP?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add ISP Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add ISP Provider</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_isp') }}">
+            <div class="form-group">
+                <label>ISP ID (lowercase, no spaces)</label>
+                <input type="text" name="id" placeholder="dialog" required>
+                <small>e.g., dialog, airtel, hutch, mobitel</small>
+            </div>
+            <div class="form-group">
+                <label>ISP Name (with emoji)</label>
+                <input type="text" name="name" placeholder="🔴 Dialog" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="Dialog Axiata (Pvt) Ltd" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add ISP Provider</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit ISP Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit ISP Provider</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>ISP Name (with emoji)</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <input type="text" name="description" id="edit_description" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update ISP Provider</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(id, name, description) {
+    console.log('Opening edit modal for:', id, name, description);
+    var form = document.getElementById('editForm');
+    var nameInput = document.getElementById('edit_name');
+    var descInput = document.getElementById('edit_description');
+    
+    form.action = '/isps/edit/' + encodeURIComponent(id);
+    nameInput.value = name;
+    descInput.value = description;
+    
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal should be visible now');
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

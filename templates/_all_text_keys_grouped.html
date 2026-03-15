@@ -1,0 +1,68 @@
+{# Jinja2 partial for grouped bot text keys editing #}
+{% set topics = [
+    ('Buttons', ['buy_account', 'back_to_main', 'back_to_package', 'english', 'sinhala']),
+    ('ISP Selection', ['select_isp']),
+    ('Package Selection', ['select_package']),
+    ('V2Ray Package', ['select_v2ray_package', 'select_v2ray_desc', 'using', 'gb', 'unlimited', 'per_month', 'back_to_package']),
+    ('Custom Package', ['predefined_packages', 'custom_package', 'select_package_type', 'select_package_type_desc', 'enter_custom_gb', 'enter_custom_gb_desc', 'enter_custom_days', 'enter_custom_days_desc', 'invalid_gb_range', 'invalid_days_range', 'invalid_number', 'duration', 'data', 'back']),
+    ('Location', ['select_location']),
+    ('Payment', ['payment_method', 'payment_choose_method', 'payment_available_methods', 'total_price', 'upload_receipt', 'upload_receipt_desc', 'enter_client_name_prompt', 'upload_receipt_full_prompt', 'receipt_received', 'add_note', 'send_now', 'add_note_prompt', 'note_added', 'order_created', 'order_cancelled', 'mobile_number', 'ezcash_fee_note']),
+    ('Order Retry', ['retry', 'contact_support', 'rejection_reason', 'invalid_receipt', 'insufficient_payment', 'unclear_details', 'retry_instructions', 'retry_new_receipt', 'retry_instructions_detail', 'cancel', 'note_saved', 'your_note', 'order_submitted', 'thank_you_retry']),
+    ('Admin', ['pending_orders', 'approve', 'reject', 'account_created']),
+    ('Errors', ['error_occurred', 'not_authorized']),
+    ('Success', ['saved'])
+] %}
+
+{% for topic, keys in topics %}
+<div class="message-card" onclick="toggleMessageSection('topic_{{ loop.index }}')">
+    <div class="message-card-header">
+        <div>
+            <h3>{{ topic }}</h3>
+            <p class="card-description">Edit texts for {{ topic.lower() }}</p>
+        </div>
+        <span class="toggle-icon" id="topic_{{ loop.index }}-icon">▼</span>
+    </div>
+</div>
+<div class="message-content" id="topic_{{ loop.index }}-content" style="display: none;">
+    <form method="POST" action="{{ url_for('edit_messages') }}">
+        <div class="form-section">
+            <div class="language-sections">
+                <div class="language-section">
+                    <div class="language-header">
+                        <span class="flag">🇬🇧</span>
+                        <h4>English Texts</h4>
+                    </div>
+                    {% for key in keys %}
+                        <div style="margin-bottom: 1.2rem;">
+                            <label for="{{ key }}_en"><b>{{ key }}</b></label>
+                            <textarea name="all_texts_en_{{ key }}" rows="2" class="themed-textarea" placeholder="{{ all_text_keys_en[key] }}">{{ messages.get('all_texts_en_' + key, '') }}</textarea>
+                            <div class="preview-label">Preview:</div>
+                            <div class="preview-box">{{ messages.get('all_texts_en_' + key, '')|safe }}</div>
+                            <div class="help-text">Default: {{ all_text_keys_en[key] }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="language-section">
+                    <div class="language-header">
+                        <span class="flag">🇱🇰</span>
+                        <h4>Sinhala Texts</h4>
+                    </div>
+                    {% for key in keys %}
+                        <div style="margin-bottom: 1.2rem;">
+                            <label for="{{ key }}_si"><b>{{ key }}</b></label>
+                            <textarea name="all_texts_si_{{ key }}" rows="2" class="themed-textarea" placeholder="{{ all_text_keys_si[key] }}">{{ messages.get('all_texts_si_' + key, '') }}</textarea>
+                            <div class="preview-label">Preview:</div>
+                            <div class="preview-box">{{ messages.get('all_texts_si_' + key, '')|safe }}</div>
+                            <div class="help-text">Default: {{ all_text_keys_si[key] }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">💾 Save {{ topic }} Texts</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleMessageSection('topic_{{ loop.index }}')">Cancel</button>
+        </div>
+    </form>
+</div>
+{% endfor %}

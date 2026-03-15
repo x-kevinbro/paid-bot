@@ -1,0 +1,13 @@
+aiogram>=3.2.0
+aiohttp>=3.9.0
+pytz
+python-dotenv
+aiosqlite
+aioschedule
+Flask>=2.3.0
+firebase-admin>=6.4.0
+requests>=2.31.0
+cryptography>=42.0.0
+
+# Optional: Uncomment if you want to enable Stripe payment gateway
+# stripe>=8.0.0

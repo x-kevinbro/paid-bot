@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+
+# Secrets and local config
+.env
+firebase-credentials.json
+
+# OS/editor
+.vscode/
+.DS_Store
+Thumbs.db

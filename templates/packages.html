@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">Packages</h2>
+        <p style="color: var(--text-secondary); margin:0;">Manage package price, data caps, and descriptions.</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">Add Package</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Package List</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Data</th>
+                <th>Price</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for package in packages %}
+            <tr>
+                <td>{{ package.id }}</td>
+                <td>{{ package.name }}</td>
+                <td>{% if package.gb > 0 %}{{ package.gb }} GB{% else %}Unlimited{% endif %}</td>
+                <td>LKR {{ package.price }}</td>
+                <td>{{ package.description }}</td>
+                <td>
+                    <button class="btn btn-warning" 
+                            data-id="{{ package.id }}" 
+                            data-name="{{ package.name }}" 
+                            data-gb="{{ package.gb }}" 
+                            data-price="{{ package.price }}" 
+                            data-description="{{ package.description }}"
+                            onclick="showEditModal(this)">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_package', package_id=package.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this package?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Package Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Package</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_package') }}">
+            <div class="form-group">
+                <label>Package ID</label>
+                <input type="text" name="id" required>
+            </div>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" required>
+            </div>
+            <div class="form-group">
+                <label>Data (GB) - Use 0 for Unlimited</label>
+                <input type="number" name="gb" required>
+            </div>
+            <div class="form-group">
+                <label>Price (LKR)</label>
+                <input type="number" name="price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Package</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Package</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST" action="">
+            <input type="hidden" name="id" id="edit_id">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>Data (GB) - Use 0 for Unlimited</label>
+                <input type="number" name="gb" id="edit_gb" required>
+            </div>
+            <div class="form-group">
+                <label>Price (LKR)</label>
+                <input type="number" name="price" id="edit_price" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" id="edit_description" rows="3"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Package</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(button) {
+    const id = button.getAttribute('data-id');
+    const name = button.getAttribute('data-name');
+    const gb = button.getAttribute('data-gb');
+    const price = button.getAttribute('data-price');
+    const description = button.getAttribute('data-description');
+    
+    console.log('Opening edit modal for package:', id, name, gb, price, description);
+    
+    const editForm = document.getElementById('editForm');
+    editForm.action = '/packages/edit/' + encodeURIComponent(id);
+    
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_gb').value = gb;
+    document.getElementById('edit_price').value = price;
+    document.getElementById('edit_description').value = description || '';
+    
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal opened. Form action:', editForm.action);
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

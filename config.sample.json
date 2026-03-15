@@ -1,0 +1,126 @@
+{
+  "telegram_bot_token": "YOUR_TELEGRAM_BOT_TOKEN",
+  "admin_ids": [
+    123456789
+  ],
+  "admin_password": "CHANGE_ME",
+  "currency": "LKR",
+  "subscription_duration": 30,
+  "referrals_enabled": true,
+  "referral_claim_limit": 3,
+  "referral_claim_window_minutes": 60,
+  "admin_coupon_cooldown_minutes": 60,
+  "default_code_max_redemptions": 0,
+  "coupon_min_order_amount": 0,
+  "receipt_amount_tolerance_percent": 2,
+  "tx_ref_pattern": "",
+  "maintenance_mode": false,
+  "maintenance_banner_text": "Bot is under development.",
+  "safe_provision_queue_enabled": false,
+  "unlimited_style_creation_enabled": false,
+  "auto_panel_failover_enabled": false,
+  "custom_package_enabled": true,
+  "custom_package_pricing": {
+    "price_per_gb": 2.0,
+    "price_per_day": 1.0,
+    "min_gb": 50,
+    "max_gb": 1000,
+    "min_days": 7,
+    "max_days": 365
+  },
+  "gb_options": [
+    100,
+    200,
+    500
+  ],
+  "payment_details": {
+    "methods": [
+      {
+        "id": "bank",
+        "name": "Online Banking",
+        "type": "bank",
+        "account_name": "Your Name",
+        "account_number": "0000000000",
+        "bank_name": "Your Bank"
+      },
+      {
+        "id": "crypto_usdt",
+        "name": "USDT (TRC20)",
+        "type": "crypto",
+        "crypto_type": "USDT (TRC20)",
+        "crypto_address": "YOUR_WALLET_ADDRESS"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "name": "Singapore 1",
+      "url": "https://your-panel.example.com:2053/PANEL_PATH/",
+      "username": "panel_admin",
+      "password": "panel_password",
+      "api_port": 2053,
+      "manual_address": "your-panel.example.com"
+    }
+  ],
+  "packages": [
+    {
+      "id": "basic",
+      "name": "Basic",
+      "gb": 100,
+      "price": 200.0,
+      "description": "100GB plan"
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "gb": 200,
+      "price": 300.0,
+      "description": "200GB plan"
+    },
+    {
+      "id": "unlimited",
+      "name": "Unlimited",
+      "gb": 0,
+      "price": 500.0,
+      "description": "Unlimited data plan"
+    }
+  ],
+  "locations": [
+    {
+      "id": "sg",
+      "name": "Singapore",
+      "panel_id": 1,
+      "backup_panel_id": null,
+      "description": "Primary location"
+    }
+  ],
+  "isp_providers": [
+    {
+      "id": "dialog",
+      "name": "📶 Dialog",
+      "description": "Dialog Axiata",
+      "packages": [
+        {
+          "id": "default",
+          "name": "Default Package",
+          "sni": "aka.ms",
+          "address": "",
+          "port": 443,
+          "use_location_sni": false
+        }
+      ]
+    }
+  ],
+  "premium_channel_id": "",
+  "backup_channel_id": "",
+  "panel_backup_db_path": "panel_backup.db",
+  "messages": {
+    "account_ready_en": "🎉 Your account is ready!\n\nOrder: {order_id}\nPackage: {package_name}\nData: {gb_limit}\nLocation: {location_name}\nPort: {port}\nProtocol: {protocol}\nUsername: {username}\nValid Until: {expiry_date}\n\nSubscription Link:\n{subscription_link}",
+    "account_ready_si": "🎉 ඔබගේ ගිණුම සූදානම්!\n\nඇණවුම: {order_id}\nපැකේජය: {package_name}\nදත්ත: {gb_limit}\nස්ථානය: {location_name}\nPort: {port}\nProtocol: {protocol}\nUsername: {username}\nවලංගු දිනය: {expiry_date}\n\nSubscription Link:\n{subscription_link}"
+  },
+  "verified_login_codes": [],
+  "user_languages": {},
+  "pending_approvals": [],
+  "notifications": []
+}

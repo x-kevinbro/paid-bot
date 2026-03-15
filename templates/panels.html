@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">3x-ui Panels</h2>
+        <p style="color: var(--text-secondary); margin:0;">Manage panel credentials, API ports, and manual addresses.</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">Add Panel</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Panel List</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Username</th>
+                <th>API Port</th>
+                <th>Manual Address</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for panel in panels %}
+            <tr>
+                <td>{{ panel.id }}</td>
+                <td>{{ panel.name }}</td>
+                <td><code>{{ panel.url }}</code></td>
+                <td>{{ panel.username }}</td>
+                <td>{{ panel.api_port }}</td>
+                <td>{{ panel.manual_address or '' }}</td>
+                <td>
+                    <button class="btn btn-warning" onclick="showEditModal({{ panel.id }}, '{{ panel.name }}', '{{ panel.url }}', '{{ panel.username }}', '{{ panel.password }}', {{ panel.api_port }})">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_panel', panel_id=panel.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this panel? This will break locations using it!')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Panel Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Panel</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_panel') }}">
+            <div class="form-group">
+                <label>Panel ID</label>
+                <input type="number" name="id" min="1" required>
+                <small>Unique numeric ID for this panel</small>
+            </div>
+            <div class="form-group">
+                <label>Panel Name</label>
+                <input type="text" name="name" placeholder="USA Panel" required>
+            </div>
+            <div class="form-group">
+                <label>Panel URL</label>
+                <input type="url" name="url" placeholder="https://panel.example.com:2053" required>
+                <small>Include protocol (http/https) and port</small>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>API Port</label>
+                <input type="number" name="api_port" value="443" required>
+                <small>Usually 443 for HTTPS</small>
+            </div>
+            <div class="form-group">
+                <label>Manual Address (for SNI/Host override)</label>
+                <input type="text" name="manual_address" placeholder="panel.example.com">
+                <small>Optional: Used for SNI/Host if tick is ON</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Panel</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Panel Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Panel</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Panel Name</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>Panel URL</label>
+                <input type="url" name="url" id="edit_url" required>
+                <small>Include protocol (http/https) and port</small>
+            </div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" id="edit_username" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" id="edit_password" required>
+            </div>
+            <div class="form-group">
+                <label>API Port</label>
+                <input type="number" name="api_port" id="edit_api_port" required>
+                <small>Usually 443 for HTTPS</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Panel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(id, name, url, username, password, api_port) {
+    console.log('Opening edit modal for panel:', id, name, url, username, '***', api_port);
+    document.getElementById('editForm').action = '/panels/edit/' + id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_url').value = url;
+    document.getElementById('edit_username').value = username;
+    document.getElementById('edit_password').value = password;
+    document.getElementById('edit_api_port').value = api_port;
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal should be visible now');
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

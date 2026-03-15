@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "admin_dashboard.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "admin_dashboard.py"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/cron/provision",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/cron/notifications",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/cron/remove-expired",
+      "schedule": "40 18 * * *"
+    }
+  ]
+}

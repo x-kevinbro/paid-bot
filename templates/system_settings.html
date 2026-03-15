@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">System Settings</h2>
+        <p style="color: var(--text-secondary); margin:0;">Configure channels, provisioning behavior, and pricing defaults.</p>
+    </div>
+</div>
+
+<form method="POST" class="card" style="max-width: 900px; margin-top: 0;">
+    <div class="form-group">
+        <label for="premium_channel_id">Premium Channel ID</label>
+        <input type="text" id="premium_channel_id" name="premium_channel_id" class="form-control" value="{{ config.premium_channel_id or '' }}" placeholder="@yourchannel or channel ID" required>
+        <small class="form-text text-muted">Enter the Telegram channel ID (e.g., -1001234567890) or @username for the premium channel.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="backup_channel_id">Backup Channel ID</label>
+        <input type="text" id="backup_channel_id" name="backup_channel_id" class="form-control" value="{{ config.backup_channel_id or '' }}" placeholder="@yourbackupchannel or channel ID">
+        <small class="form-text text-muted">Bot will send panel backup DB file to this channel after each completed order.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="panel_backup_db_path">Panel Backup DB Path</label>
+        <input type="text" id="panel_backup_db_path" name="panel_backup_db_path" class="form-control" value="{{ config.panel_backup_db_path or '' }}" placeholder="C:/path/to/x-ui.db">
+        <small class="form-text text-muted">Optional. Absolute path to x-ui.db. If empty, bot tries project folder and Downloads.</small>
+    </div>
+    
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <label style="margin: 0; font-weight: 600;">Referral Claims Status</label>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem;">Enable or disable users from claiming referral and admin coupon codes</small>
+            </div>
+            <label class="switch" style="margin-left: auto;">
+                <input type="checkbox" id="referrals_enabled" name="referrals_enabled" {% if config.referrals_enabled %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="referral_claim_limit">Referral Claim Limit (per user)</label>
+        <input type="number" id="referral_claim_limit" name="referral_claim_limit" class="form-control" value="{{ config.referral_claim_limit or 3 }}" min="1" required>
+        <small class="form-text text-muted">Maximum code claims allowed per user in each claim window.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="referral_claim_window_minutes">Claim Window (minutes)</label>
+        <input type="number" id="referral_claim_window_minutes" name="referral_claim_window_minutes" class="form-control" value="{{ config.referral_claim_window_minutes or 60 }}" min="1" required>
+        <small class="form-text text-muted">Duration used for claim-rate checks (for example, 60 = per hour).</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="admin_coupon_cooldown_minutes">Admin Coupon Cooldown (minutes)</label>
+        <input type="number" id="admin_coupon_cooldown_minutes" name="admin_coupon_cooldown_minutes" class="form-control" value="{{ config.admin_coupon_cooldown_minutes or 60 }}" min="1" required>
+        <small class="form-text text-muted">Cooldown duration after a user reaches the claim limit on admin coupon claims.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="default_code_max_redemptions">Default Per-Code Max Redemptions</label>
+        <input type="number" id="default_code_max_redemptions" name="default_code_max_redemptions" class="form-control" value="{{ config.default_code_max_redemptions or 0 }}" min="0" required>
+        <small class="form-text text-muted">Applied when a code does not have its own max_uses. Use 0 for unlimited.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="coupon_min_order_amount">Minimum Order Amount for Coupon Use</label>
+        <input type="number" id="coupon_min_order_amount" name="coupon_min_order_amount" class="form-control" value="{{ config.coupon_min_order_amount or 0 }}" min="0" step="0.01" required>
+        <small class="form-text text-muted">Coupon/reward auto-apply only works when order total is at least this amount.</small>
+    </div>
+
+    <hr style="margin: 1.5rem 0; border-color: var(--border);">
+    <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Receipt Verification</h4>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="receipt_amount_tolerance_percent">Amount Match Tolerance (%)</label>
+        <input type="number" id="receipt_amount_tolerance_percent" name="receipt_amount_tolerance_percent" class="form-control" value="{{ config.receipt_amount_tolerance_percent if config.receipt_amount_tolerance_percent is not none else 2 }}" min="0" max="50" step="0.5" required>
+        <small class="form-text text-muted">How much the receipt amount can differ from the order total before it counts as a mismatch. E.g. 2 = ±2%.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="tx_ref_pattern">Transaction Reference Regex Pattern</label>
+        <input type="text" id="tx_ref_pattern" name="tx_ref_pattern" class="form-control" value="{{ config.tx_ref_pattern or '' }}" placeholder="e.g. [A-Z]{3}[0-9]{10,16}">
+        <small class="form-text text-muted">Optional regex to extract payment references from receipts/notes. Leave empty to use built-in patterns.</small>
+    </div>
+    
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <label style="margin: 0; font-weight: 600;">✨ Custom Packages</label>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem;">Allow users to create custom packages by selecting GB and days</small>
+            </div>
+            <label class="switch" style="margin-left: auto;">
+                <input type="checkbox" id="custom_package_enabled" name="custom_package_enabled" {% if config.custom_package_enabled %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group maintenance-mode-group" style="margin-top: 1.5rem;">
+        <div class="maintenance-mode-card">
+            <div class="maintenance-mode-copy">
+                <label for="maintenance_mode" style="margin: 0; font-weight: 700; font-size: 1rem;">🚧 Maintenance Mode</label>
+                <small class="form-text text-muted maintenance-mode-help">Block all non-admin users. Admin users can continue using the bot normally.</small>
+            </div>
+            <label class="switch switch-maintenance" style="margin-left: auto;">
+                <input type="checkbox" id="maintenance_mode" name="maintenance_mode" {% if config.maintenance_mode %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="maintenance_banner_text" style="font-weight: 600;">Maintenance Banner Text</label>
+        <textarea id="maintenance_banner_text" name="maintenance_banner_text" class="form-control" rows="3" placeholder="Bot is under development.">{{ config.maintenance_banner_text or '' }}</textarea>
+        <small class="form-text text-muted">Shown to non-admin users when maintenance mode is enabled.</small>
+    </div>
+
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <label style="margin: 0; font-weight: 600;">🛡️ Safe Provision Queue</label>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem;">Process provisioning requests in safe mode to reduce duplicate/retry conflicts.</small>
+            </div>
+            <label class="switch" style="margin-left: auto;">
+                <input type="checkbox" id="safe_provision_queue_enabled" name="safe_provision_queue_enabled" {% if config.safe_provision_queue_enabled %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <label style="margin: 0; font-weight: 600;">🔁 Auto Panel Failover</label>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem;">If primary panel fails, try remaining configured panels automatically.</small>
+            </div>
+            <label class="switch" style="margin-left: auto;">
+                <input type="checkbox" id="auto_panel_failover_enabled" name="auto_panel_failover_enabled" {% if config.auto_panel_failover_enabled %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div>
+                <label style="margin: 0; font-weight: 600;">⚡ Unlimited-Style Creation Flow</label>
+                <small class="form-text text-muted" style="display: block; margin-top: 0.25rem;">Enable protocol-aware account creation flow (with automatic fallback to legacy flow).</small>
+            </div>
+            <label class="switch" style="margin-left: auto;">
+                <input type="checkbox" id="unlimited_style_creation_enabled" name="unlimited_style_creation_enabled" {% if config.unlimited_style_creation_enabled %}checked{% endif %}>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" style="margin-top: 1rem;">
+        <label for="provision_max_attempts" style="font-weight: 600;">Provision Max Attempts</label>
+        <input type="number" id="provision_max_attempts" name="provision_max_attempts" class="form-control" value="{{ config.provision_max_attempts }}" min="1" required>
+        <small class="form-text text-muted">Maximum retry attempts before a provisioning request is marked failed.</small>
+    </div>
+    
+    <div class="form-group" style="margin-top: 2rem; padding: 1.5rem; background: var(--code-bg, #f8f9fa); border-radius: 12px; border-left: 4px solid var(--accent-solid);">
+        <h4 style="margin: 0 0 1rem 0; font-size: 1.1rem;">Custom Package Pricing</h4>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label for="price_per_gb" style="font-size: 0.9rem; font-weight: 600;">Price per GB</label>
+                <input type="number" id="price_per_gb" name="price_per_gb" class="form-control" value="{{ config.custom_package_pricing.price_per_gb }}" step="0.01" min="0" required>
+                <small class="form-text text-muted">Cost per GB in {{ config.currency or 'LKR' }}</small>
+            </div>
+            
+            <div>
+                <label for="price_per_day" style="font-size: 0.9rem; font-weight: 600;">Price per Day</label>
+                <input type="number" id="price_per_day" name="price_per_day" class="form-control" value="{{ config.custom_package_pricing.price_per_day }}" step="0.01" min="0" required>
+                <small class="form-text text-muted">Cost per day in {{ config.currency or 'LKR' }}</small>
+            </div>
+        </div>
+        
+        <h5 style="margin: 1.5rem 0 0.75rem 0; font-size: 1rem;">GB Limits</h5>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label for="min_gb" style="font-size: 0.9rem; font-weight: 600;">Minimum GB</label>
+                <input type="number" id="min_gb" name="min_gb" class="form-control" value="{{ config.custom_package_pricing.min_gb }}" min="1" required>
+            </div>
+            
+            <div>
+                <label for="max_gb" style="font-size: 0.9rem; font-weight: 600;">Maximum GB</label>
+                <input type="number" id="max_gb" name="max_gb" class="form-control" value="{{ config.custom_package_pricing.max_gb }}" min="1" required>
+            </div>
+        </div>
+        
+        <h5 style="margin: 1.5rem 0 0.75rem 0; font-size: 1rem;">Days Limits</h5>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+                <label for="min_days" style="font-size: 0.9rem; font-weight: 600;">Minimum Days</label>
+                <input type="number" id="min_days" name="min_days" class="form-control" value="{{ config.custom_package_pricing.min_days }}" min="1" required>
+            </div>
+            
+            <div>
+                <label for="max_days" style="font-size: 0.9rem; font-weight: 600;">Maximum Days</label>
+                <input type="number" id="max_days" name="max_days" class="form-control" value="{{ config.custom_package_pricing.max_days }}" min="1" required>
+            </div>
+        </div>
+        
+        <div style="margin-top: 1rem; padding: 0.75rem; background: white; border-radius: 8px; border:1px solid var(--surface-border);">
+            <small style="color: var(--text-secondary);">
+                <strong>💡 Formula:</strong> Total Price = (GB × Price per GB) + (Days × Price per Day)
+            </small>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary" style="margin-top: 1.5rem;">Save Settings</button>
+</form>
+{% if saved %}
+<div class="alert alert-success" style="margin-top: 1rem;">Settings updated successfully!</div>
+{% endif %}
+
+<style>
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.maintenance-mode-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 190, 92, 0.12), rgba(255, 123, 123, 0.12));
+    border: 1px solid rgba(255, 143, 91, 0.35);
+}
+
+.maintenance-mode-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.maintenance-mode-help {
+    color: #4b5563;
+    max-width: 420px;
+}
+
+.switch-maintenance {
+    width: 58px;
+    height: 30px;
+}
+
+.switch-maintenance .slider {
+    background-color: #cfd4de;
+}
+
+.switch-maintenance .slider:before {
+    height: 22px;
+    width: 22px;
+    left: 4px;
+    bottom: 4px;
+}
+
+.switch-maintenance input:checked + .slider {
+    background: linear-gradient(135deg, #ff8f5b, #ef4444);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12);
+}
+
+.switch-maintenance input:checked + .slider:before {
+    transform: translateX(28px);
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #667eea;
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+</style>
+{% endblock %}

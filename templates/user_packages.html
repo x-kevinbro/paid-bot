@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>📦 User Packages/Apps</h2>
+        <button class="btn btn-primary" onclick="showAddModal()">Add Package</button>
+    </div>
+    
+    <p style="color: #666; margin-bottom: 1.5rem;">
+        These are the packages/apps users can select after choosing their ISP.
+    </p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name (with emoji)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pkg in user_packages %}
+            <tr>
+                <td><code>{{ pkg.id }}</code></td>
+                <td>{{ pkg.name }}</td>
+                <td>
+                    <button class="btn btn-warning" onclick="showEditModal('{{ pkg.id }}', '{{ pkg.name }}')">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_user_package', package_id=pkg.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this package?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Package Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add User Package</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_user_package') }}">
+            <div class="form-group">
+                <label>Package ID (lowercase, no spaces)</label>
+                <input type="text" name="id" placeholder="zoom" required>
+                <small>e.g., zoom, whatsapp, facebook, netflix</small>
+            </div>
+            <div class="form-group">
+                <label>Package Name (with emoji)</label>
+                <input type="text" name="name" placeholder="📹 Zoom" required>
+                <small>Add an emoji for better UX</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Package</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit User Package</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Package Name (with emoji)</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Package</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(id, name) {
+    console.log('Opening edit modal for user package:', id, name);
+    document.getElementById('editForm').action = '/user-packages/edit/' + encodeURIComponent(id);
+    document.getElementById('edit_name').value = name;
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal should be visible now');
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

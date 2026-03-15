@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">Payment Methods</h2>
+        <p style="color: var(--text-secondary); margin:0;">Configure bank, eZcash, crypto, and custom payment options.</p>
+    </div>
+    <button class="btn btn-primary" onclick="showAddModal()">Add Payment Method</button>
+</div>
+
+<div class="card">
+    <h3 style="margin-top:0;">Method List</h3>
+    
+    {% if methods %}
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Details</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for method in methods %}
+            <tr>
+                <td><code>{{ method.id }}</code></td>
+                <td>{{ method.name }}</td>
+                <td>
+                    {% if method.id.startswith('bank') or method.type == 'bank' %}
+                        {{ method.account_name }} ({{ method.bank_name }})
+                    {% elif method.id == 'ezcash' or method.type == 'ezcash' %}
+                        {{ method.mobile_number }}
+                    {% elif method.id.startswith('crypto') or method.type == 'crypto' %}
+                        {{ method.crypto_type }}
+                    {% else %}
+                        Custom Method
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn btn-warning" onclick="showEditModal('{{ method.id }}', '{{ method.name }}')">Edit</button>
+                    <form method="POST" action="{{ url_for('delete_payment_method', method_id=method.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this payment method?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align: center; color: var(--text-secondary);">No payment methods added yet. Click "Add Payment Method" to get started.</p>
+    {% endif %}
+</div>
+
+<!-- Add Payment Method Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Payment Method</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_payment_method') }}" id="addForm">
+            <div class="form-group">
+                <label>Method Type</label>
+                <select name="method_id" id="method_type" required onchange="updateAddFields()">
+                    <option value="">Select method type...</option>
+                    <option value="bank">💳 Bank Transfer</option>
+                    <option value="ezcash">📱 eZcash</option>
+                    <option value="crypto">💰 Cryptocurrency</option>
+                    <option value="custom">🔧 Custom Method</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Display Name</label>
+                <input type="text" name="method_name" placeholder="e.g., Bank Transfer via BOC" required>
+                <small>This is what users will see</small>
+            </div>
+
+            <!-- Bank Transfer Fields -->
+            <div id="bank_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>Bank Details</h4>
+                <div class="form-group">
+                    <label>Account Name</label>
+                    <input type="text" name="account_name" placeholder="T.D Sanhitha">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" name="bank_name" placeholder="Bank of Ceylon">
+                </div>
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="text" name="account_number" placeholder="93911045">
+                </div>
+            </div>
+
+            <!-- eZcash Fields -->
+            <div id="ezcash_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>eZcash Details</h4>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="text" name="mobile_number" placeholder="0771234567">
+                    <small>eZcash registered mobile number</small>
+                </div>
+            </div>
+
+            <!-- Crypto Fields -->
+            <div id="crypto_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>Cryptocurrency Details</h4>
+                <div class="form-group">
+                    <label>Crypto Type</label>
+                    <input type="text" name="crypto_type" placeholder="BTC, ETH, USDT, etc.">
+                </div>
+                <div class="form-group">
+                    <label>Wallet Address</label>
+                    <input type="text" name="crypto_address" placeholder="Your wallet address here">
+                    <small>Make sure this is correct</small>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Add Payment Method</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Payment Method Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Payment Method</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Display Name</label>
+                <input type="text" name="method_name" id="edit_name" required>
+            </div>
+
+            <!-- Bank Transfer Fields -->
+            <div id="edit_bank_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>Bank Details</h4>
+                <div class="form-group">
+                    <label>Account Name</label>
+                    <input type="text" name="account_name" id="edit_account_name">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" name="bank_name" id="edit_bank_name">
+                </div>
+                <div class="form-group">
+                    <label>Account Number</label>
+                    <input type="text" name="account_number" id="edit_account_number">
+                </div>
+            </div>
+
+            <!-- eZcash Fields -->
+            <div id="edit_ezcash_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>eZcash Details</h4>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="text" name="mobile_number" id="edit_mobile_number">
+                    <small>eZcash registered mobile number</small>
+                </div>
+            </div>
+
+            <!-- Crypto Fields -->
+            <div id="edit_crypto_fields" style="display:none;">
+                <hr style="margin: 1rem 0; border: none; border-top: 1px solid var(--surface-border);">
+                <h4>Cryptocurrency Details</h4>
+                <div class="form-group">
+                    <label>Crypto Type</label>
+                    <input type="text" name="crypto_type" id="edit_crypto_type">
+                </div>
+                <div class="form-group">
+                    <label>Wallet Address</label>
+                    <input type="text" name="crypto_address" id="edit_crypto_address">
+                    <small>Make sure this is correct</small>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update Payment Method</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.modal.show {
+    display: flex;
+}
+</style>
+
+<script>
+function showAddModal() {
+    document.getElementById('addModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeAddModal() {
+    document.getElementById('addModal').classList.remove('show');
+    document.getElementById('addForm').reset();
+    document.getElementById('bank_fields').style.display = 'none';
+    document.getElementById('ezcash_fields').style.display = 'none';
+    document.getElementById('crypto_fields').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function updateAddFields() {
+    const methodType = document.getElementById('method_type').value;
+    document.getElementById('bank_fields').style.display = methodType === 'bank' ? 'block' : 'none';
+    document.getElementById('ezcash_fields').style.display = methodType === 'ezcash' ? 'block' : 'none';
+    document.getElementById('crypto_fields').style.display = methodType === 'crypto' ? 'block' : 'none';
+}
+
+function showEditModal(methodId, methodName) {
+    const config = {{ methods | tojson }};
+    const method = config.find(m => m.id === methodId);
+    
+    if (!method) return;
+    
+    document.getElementById('editForm').action = `/payment-methods/edit/${methodId}`;
+    document.getElementById('edit_name').value = method.name;
+    
+    // Determine method type from ID or type field
+    const methodType = method.type || (methodId.startsWith('bank') ? 'bank' : methodId === 'ezcash' ? 'ezcash' : methodId.startsWith('crypto') ? 'crypto' : '');
+    
+    // Hide all field sections first
+    document.getElementById('edit_bank_fields').style.display = 'none';
+    document.getElementById('edit_ezcash_fields').style.display = 'none';
+    document.getElementById('edit_crypto_fields').style.display = 'none';
+    
+    // Show appropriate fields based on method type
+    if (methodType === 'bank' || methodId.startsWith('bank')) {
+        document.getElementById('edit_bank_fields').style.display = 'block';
+        document.getElementById('edit_account_name').value = method.account_name || '';
+        document.getElementById('edit_bank_name').value = method.bank_name || '';
+        document.getElementById('edit_account_number').value = method.account_number || '';
+    } else if (methodType === 'ezcash' || methodId === 'ezcash') {
+        document.getElementById('edit_ezcash_fields').style.display = 'block';
+        document.getElementById('edit_mobile_number').value = method.mobile_number || '';
+    } else if (methodType === 'crypto' || methodId.startsWith('crypto')) {
+        document.getElementById('edit_crypto_fields').style.display = 'block';
+        document.getElementById('edit_crypto_type').value = method.crypto_type || '';
+        document.getElementById('edit_crypto_address').value = method.crypto_address || '';
+    }
+    
+    document.getElementById('editModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+    document.body.style.overflow = 'auto';
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

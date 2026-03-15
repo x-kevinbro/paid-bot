@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1.5rem;">
+    <div>
+        <h2 style="color: var(--text-primary); margin-bottom:0.25rem;">Order Management</h2>
+        <p style="color: var(--text-secondary); margin:0;">Review, approve, and reject customer orders.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" onclick="filterOrders('all')">All Orders</button>
+        <button class="btn btn-warning" onclick="filterOrders('pending')">Pending</button>
+        <button class="btn btn-success" onclick="filterOrders('approved')">Approved</button>
+        <button class="btn btn-danger" onclick="filterOrders('rejected')">Rejected</button>
+    </div>
+
+    {% if orders %}
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>ISP / App</th>
+                <th>Package</th>
+                <th>Location</th>
+                <th>Price</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Receipt</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="orderTable">
+            {% for order in orders %}
+            <tr class="order-row" data-status="{{ order.status }}">
+                <td>{{ order.order_id }}</td>
+                <td>
+                    {{ order.username }}<br>
+                    <small>(ID: {{ order.user_id }})</small>
+                    {% if order.get('user_note') %}
+                    <br><div style="position:relative; display:inline-block; margin-top:0.3rem;">
+                        <a href="javascript:void(0)" onclick="toggleNoteTooltip(event, '{{ order.order_id }}')" style="color:#b45309; font-weight:bold; text-decoration:none; font-size:0.8rem; cursor:pointer; padding:0.2rem 0.45rem; border-radius:8px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.3);">
+                            💬 Note
+                        </a>
+                        <div id="tooltip-{{ order.order_id }}" class="note-tooltip" style="display:none; position:absolute; bottom:calc(100% + 8px); left:0; background:#fffbea; border:1px solid #f59e0b; border-radius:10px; padding:0.8rem; min-width:250px; max-width:350px; box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:1000; color:#78350f; font-size:0.85rem; line-height:1.6; white-space:normal; word-wrap:break-word;">
+                            <div style="border-left:3px solid #f59e0b; padding-left:0.8rem;">{{ order.get('user_note')|e }}</div>
+                            <div style="position:absolute; bottom:-4px; left:12px; width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent; border-top:4px solid #f59e0b;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ order.get('isp_name', 'N/A') }}<br>
+                    <small>{{ order.get('user_package', 'N/A') }}</small>
+                </td>
+                <td>{{ order.package_name }}</td>
+                <td>
+                    {% if order.location_id %}
+                    {{ order.location_id }}
+                    {% else %}
+                    <em>N/A</em>
+                    {% endif %}
+                </td>
+                <td>
+                    LKR {{ order.total_price }}
+                    {% if order.get('applied_referral_code') %}
+                    <br><small style="color:#10b981;">
+                        🎁 Code: <strong>{{ order.applied_referral_code }}</strong>
+                        <br>Saved: LKR {{ order.get('discount_amount', 0) }}
+                    </small>
+                    {% endif %}
+                    {% if order.get('referral_reward_applied') %}
+                    <br><small style="color:#f59e0b;">
+                        🏆 Referral Reward
+                        <br>Saved: LKR {{ order.get('reward_discount_amount', 0) }}
+                    </small>
+                    {% endif %}
+                </td>
+                <td>{{ order.created_at[:10] }}</td>
+                <td>
+                {% if order.status == 'pending' %}
+                <span class="badge badge-warning">⏳ Pending</span>
+                {% elif order.status == 'approved' %}
+                <span class="badge badge-success">✓ Approved</span>
+                {% elif order.status == 'rejected' %}
+                <span class="badge badge-danger">✗ Rejected</span>
+                {% endif %}
+                {% set vs = order.get('receipt_verification_status', 'unverified') %}
+                {% if vs == 'match' %}
+                <br><span class="badge" style="background:#10b981; color:#fff; margin-top:0.3rem;">✓ Receipt OK</span>
+                {% elif vs == 'mismatch' %}
+                <br><span class="badge" style="background:#ef4444; color:#fff; margin-top:0.3rem;">✗ Mismatch</span>
+                {% elif vs == 'duplicate' %}
+                <br><span class="badge" style="background:#f97316; color:#fff; margin-top:0.3rem;">⚠ Duplicate</span>
+                {% elif vs == 'partial' %}
+                <br><span class="badge" style="background:#f59e0b; color:#fff; margin-top:0.3rem;">⚠ Partial</span>
+                {% elif vs == 'manual_ok' %}
+                <br><span class="badge" style="background:#10b981; color:#fff; margin-top:0.3rem;">✓ Manual OK</span>
+                {% elif vs == 'manual_flag' %}
+                <br><span class="badge" style="background:#ef4444; color:#fff; margin-top:0.3rem;">⚑ Flagged</span>
+                {% endif %}
+                {% if order.get('receipt_ocr_amount_hint') %}
+                <br><small style="color:#6b7280;">Amount: {{ order.receipt_ocr_amount_hint }}</small>
+                {% endif %}
+                {% if order.get('receipt_tx_ref') %}
+                <br><small style="color:#6b7280;">TxRef: {{ order.receipt_tx_ref }}</small>
+                {% endif %}
+                </td>
+                <td>
+                {% set receipt_endpoint = url_for('order_receipt', order_id=order.order_id) %}
+                <a href="{{ receipt_endpoint }}" target="_blank" class="btn btn-info" style="padding:0.35rem 0.6rem; font-size:0.8rem;">View</a>
+                </td>
+                <td>
+                {% if order.status == 'pending' %}
+                <form method="POST" action="{{ url_for('approve_order', order_id=order.order_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Approve</button>
+                </form>
+                <form method="POST" action="{{ url_for('reject_order', order_id=order.order_id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Reject</button>
+                </form>
+                {% elif order.status == 'approved' %}
+                <form method="POST" action="{{ url_for('resend_order', order_id=order.order_id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-info" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">Resend</button>
+                </form>
+                <form method="POST" action="{{ url_for('revoke_order', order_id=order.order_id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="return confirm('Revoke this account?')">Revoke</button>
+                </form>
+                <form method="POST" action="{{ url_for('regenerate_order', order_id=order.order_id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="return confirm('Regenerate account for this order?')">Regenerate</button>
+                </form>
+                {% else %}
+                <div style="font-size:0.8rem; color:#64748b;">
+                <div><em>{{ order.status|upper }}</em></div>
+                {% if order.approved_at %}
+                <div>At: {{ order.approved_at[:19] }}</div>
+                {% endif %}
+                {% if order.approved_by_admin_id %}
+                <div>By: {{ order.approved_by_admin_id }}</div>
+                {% endif %}
+                {% if order.get('receipt_ocr_amount_hint') %}
+                <div>OCR Amount: {{ order.get('receipt_ocr_amount_hint') }}</div>
+                {% endif %}
+                </div>
+                {% endif %}
+                </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+<!-- Receipt Modal -->
+<div id="receiptModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000;">
+    <div style="max-width:90vw; max-height:90vh; margin:5vh auto; background:#fff; padding:1rem; border-radius:10px; position:relative;">
+        <button onclick="closeReceiptModal()" style="position:absolute; top:8px; right:8px; background:#111827; color:#fff; border:none; border-radius:6px; padding:0.4rem 0.6rem; cursor:pointer;">Close</button>
+        <img id="receiptImage" src="" alt="Receipt" style="max-width:100%; max-height:80vh; display:block; margin:0 auto;" />
+    </div>
+</div>
+    {% else %}
+    <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        <p>No orders yet</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function filterOrders(status) {
+    const rows = document.querySelectorAll('.order-row');
+    rows.forEach(row => {
+        if (status === 'all' || row.dataset.status === status) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function openReceiptModal(url) {
+    const modal = document.getElementById('receiptModal');
+    const img = document.getElementById('receiptImage');
+    if (!modal || !img) return;
+    img.src = url;
+    modal.style.display = 'block';
+}
+
+function closeReceiptModal() {
+    const modal = document.getElementById('receiptModal');
+    const img = document.getElementById('receiptImage');
+    if (!modal || !img) return;
+    img.src = '';
+    modal.style.display = 'none';
+}
+
+function toggleNoteTooltip(event, orderId) {
+    event.stopPropagation();
+    const tooltip = document.getElementById('tooltip-' + orderId);
+    if (!tooltip) return;
+    
+    // Close all other tooltips
+    document.querySelectorAll('.note-tooltip').forEach(t => {
+        if (t !== tooltip) t.style.display = 'none';
+    });
+    
+    // Toggle current tooltip
+    tooltip.style.display = tooltip.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close all tooltips when clicking outside
+document.addEventListener('click', function() {
+    document.querySelectorAll('.note-tooltip').forEach(tooltip => {
+        tooltip.style.display = 'none';
+    });
+});
+</script>
+{% endblock %}

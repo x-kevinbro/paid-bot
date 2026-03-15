@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h2>📦 Packages for {{ isp.name }}</h2>
+            <p style="color: #666; margin-top: 0.5rem;">ISP: {{ isp.description }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('isps') }}" class="btn" style="margin-right: 10px;">← Back to ISPs</a>
+            <button class="btn btn-primary" onclick="showAddModal()">Add Package</button>
+        </div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name (with emoji)</th>
+                <th>SNI</th>
+                <th>Port</th>
+                <th>Use Address as SNI</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if isp.packages %}
+                {% for pkg in isp.packages %}
+                <tr>
+                    <td><code>{{ pkg.id }}</code></td>
+                    <td>{{ pkg.name }}</td>
+                    <td><code>{{ pkg.sni or 'Not set' }}</code></td>
+                    <td><code>{{ pkg.port or 443 }}</code></td>
+                    <td>{{ '✅' if pkg.use_location_sni else '❌' }}</td>
+                    <td>
+                        <button class="btn btn-warning" onclick='showEditModal({{ pkg.id|tojson }}, {{ pkg.name|tojson }}, {{ (pkg.sni or "")|tojson }}, {{ (pkg.port or 443)|tojson }}, {{ (pkg.use_location_sni or false)|tojson }})'>Edit</button>
+                        <form method="POST" action="{{ url_for('delete_isp_package', isp_id=isp.id, package_id=pkg.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this package?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 2rem; color: #666;">
+                        No packages added yet. Click "Add Package" to get started.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Package Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Package to {{ isp.name }}</h2>
+            <span class="close" onclick="closeAddModal()">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('add_isp_package', isp_id=isp.id) }}">
+            <div class="form-group">
+                <label>Package ID (lowercase, no spaces)</label>
+                <input type="text" name="id" placeholder="zoom" required>
+                <small>e.g., zoom, whatsapp, facebook, youtube, netflix, gaming, tiktok, instagram</small>
+            </div>
+            <div class="form-group">
+                <label>Package Name (with emoji)</label>
+                <input type="text" name="name" placeholder="📹 Zoom" required>
+                <small>Add emoji at start for better UX</small>
+            </div>
+            <div class="form-group">
+                <label>SNI (Server Name Indication)</label>
+                <input type="text" name="sni" placeholder="www.speedtest.net">
+                <small>Domain used for TLS handshake (e.g., www.youtube.com, www.whatsapp.com)</small>
+            </div>
+            <div class="form-group">
+                <label>Port</label>
+                <input type="number" name="port" placeholder="443" value="443" min="1" max="65535" required>
+                <small>Port number for inbound (e.g., 443, 8443, 80)</small>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="add_use_location_sni" name="use_location_sni" value="on" onchange="toggleAddressField('add')">
+                <label for="add_use_location_sni" style="margin: 0;">Use Address as SNI</label>
+                <small style="margin-left: auto; color: #666;">When checked, uses this package's address instead of custom SNI</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Package</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Package</h2>
+            <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <form id="editForm" method="POST">
+            <div class="form-group">
+                <label>Package Name (with emoji)</label>
+                <input type="text" name="name" id="edit_name" required>
+            </div>
+            <div class="form-group">
+                <label>SNI (Server Name Indication)</label>
+                <input type="text" name="sni" id="edit_sni">
+                <small>Domain used for TLS handshake</small>
+            </div>
+            <div class="form-group">
+                <label>Port</label>
+                <input type="number" name="port" id="edit_port" placeholder="443" min="1" max="65535" required>
+                <small>Port number for inbound</small>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="edit_use_location_sni" name="use_location_sni" value="on" onchange="toggleAddressField('edit')">
+                <label for="edit_use_location_sni" style="margin: 0;">Use Address as SNI</label>
+                <small style="margin-left: auto; color: #666;">When checked, uses this package's address instead of custom SNI</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Update Package</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function showAddModal() {
+    console.log('Opening add modal');
+    var addUseLocationSni = document.getElementById('add_use_location_sni');
+    if (addUseLocationSni) {
+        addUseLocationSni.checked = false;
+    }
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function closeAddModal() {
+    console.log('Closing add modal');
+    document.getElementById('addModal').style.display = 'none';
+}
+
+function showEditModal(id, name, sni, port, useLocationSni) {
+    console.log('Opening edit modal for package:', id, name, sni, port, useLocationSni);
+    var ispId = {{ isp.id|tojson }};
+    document.getElementById('editForm').action = '/isps/' + ispId + '/packages/edit/' + encodeURIComponent(id);
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_sni').value = sni || '';
+    document.getElementById('edit_port').value = port || 443;
+    var editUseLocationSni = document.getElementById('edit_use_location_sni');
+    if (editUseLocationSni) {
+        editUseLocationSni.checked = useLocationSni === true || useLocationSni === 'true';
+    }
+    
+    document.getElementById('editModal').style.display = 'block';
+    console.log('Edit modal should be visible now');
+}
+
+function closeEditModal() {
+    console.log('Closing edit modal');
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const addModal = document.getElementById('addModal');
+    const editModal = document.getElementById('editModal');
+    if (event.target == addModal) {
+        closeAddModal();
+    }
+    if (event.target == editModal) {
+        closeEditModal();
+    }
+}
+</script>
+{% endblock %}

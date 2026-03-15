@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <div style="margin-bottom: 2rem;">
+        <h2>💬 Bot Messages</h2>
+        <p class="help-text" style="margin: 0.5rem 0;">Edit the messages that your bot sends to users. Leave fields empty to use default messages.</p>
+        
+        <div style="margin-top: 1rem; padding: 1rem; background: var(--code-bg); border-radius: 8px; border-left: 4px solid var(--accent-solid);">
+            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">
+                💡 <strong>Tip:</strong> Only customize the messages you want to change. Empty fields will use the default bot messages automatically.
+            </p>
+        </div>
+    </div>
+
+    <!-- Message Type Cards -->
+    <div class="message-cards">
+        <!-- Welcome Message Card -->
+        <div class="message-card" onclick="toggleMessageSection('welcome')">
+            <div class="message-card-header">
+                <div>
+                    <h3>👋 Welcome Message</h3>
+                    <p class="card-description">First message shown after language selection</p>
+                </div>
+                <span class="toggle-icon" id="welcome-icon">▼</span>
+            </div>
+        </div>
+        <div class="message-content" id="welcome-content" style="display: none;">
+            <form method="POST" action="{{ url_for('edit_messages') }}">
+                <div class="language-sections">
+                    <div class="language-section">
+                        <div class="language-header">
+                            <span class="flag">🇬🇧</span>
+                            <h4>English Version</h4>
+                        </div>
+                        <p class="help-text">
+                            This message is shown to users after they select English language.<br>
+                            Keep it short and welcoming!
+                        </p>
+                        <textarea name="welcome_en" rows="6" class="themed-textarea" placeholder="Enter welcome message in English...">{{ messages.get('welcome_en', '') }}</textarea>
+                        <div class="preview-box" style="margin-top: 1rem;">
+                            <div class="preview-label">Preview:</div>
+                            {{ messages.get('welcome_en', 'Not set')|safe }}
+                        </div>
+                    </div>
+
+                    <div class="language-section">
+                        <div class="language-header">
+                            <span class="flag">🇱🇰</span>
+                            <h4>Sinhala Version / සිංහල</h4>
+                        </div>
+                        <p class="help-text">
+                            භාවිතා කරන්නන් සිංහල භාෂාව තෝරා ගැනීමෙන් පසු පෙන්වන පණිවිඩය.<br>
+                            This message is shown to users after they select Sinhala language.
+                        </p>
+                        <textarea name="welcome_si" rows="6" class="themed-textarea" placeholder="සිංහලෙන් පිළිගැනීමේ පණිවිඩය ඇතුළත් කරන්න...">{{ messages.get('welcome_si', '') }}</textarea>
+                        <div class="preview-box" style="margin-top: 1rem;">
+                            <div class="preview-label">Preview:</div>
+                            {{ messages.get('welcome_si', 'Not set')|safe }}
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="account_ready" value="{{ messages.get('account_ready', '') }}">
+                
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">💾 Save Welcome Messages</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleMessageSection('welcome')">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Account Ready Message Card -->
+        <div class="message-card" onclick="toggleMessageSection('account')">
+            <div class="message-card-header">
+                <div>
+                    <h3>✅ Account Ready Message</h3>
+                    <p class="card-description">Message sent when V2Ray account is created (in user's selected language)</p>
+                </div>
+                <span class="toggle-icon" id="account-icon">▼</span>
+            </div>
+        </div>
+        <div class="message-content" id="account-content" style="display: none;">
+            <form method="POST" action="{{ url_for('edit_messages') }}">
+                <div class="language-sections">
+                    <div class="language-section">
+                        <div class="language-header">
+                            <span class="flag">🇬🇧</span>
+                            <h4>English Version</h4>
+                        </div>
+                        <p class="help text">
+                            Message sent to users who selected English language.<br>
+                            <b>Available variables:</b> {order_id}, {package_name}, {gb_limit}, {location_name}, {port}, {protocol}, {username}, {expiry_date}, {subscription_link}
+                        </p>
+                        <textarea name="account_ready_en" rows="20" class="themed-textarea" placeholder="Enter English account ready message template...">{{ messages.get('account_ready_en', messages.get('account_ready', '')) }}</textarea>
+                        <div class="preview-box" style="margin-top: 1rem;">
+                            <div class="preview-label">Preview:</div>
+                            {{ messages.get('account_ready_en', messages.get('account_ready', '')) [:200] }}...
+                        </div>
+                    </div>
+
+                    <div class="language-section">
+                        <div class="language-header">
+                            <span class="flag">🇱🇰</span>
+                            <h4>Sinhala Version / සිංහල</h4>
+                        </div>
+                        <p class="help-text">
+                            භාවිතා කරන්නන් සිංහල භාෂාව තෝරා ගත් විට යවන පණිවිඩය.<br>
+                            <b>Available variables:</b> {order_id}, {package_name}, {gb_limit}, {location_name}, {port}, {protocol}, {username}, {expiry_date}, {subscription_link}
+                        </p>
+                        <textarea name="account_ready_si" rows="20" class="themed-textarea" placeholder="සිංහල ගිණුම සූදානම් පණිවිඩය ඇතුළත් කරන්න...">{{ messages.get('account_ready_si', '') }}</textarea>
+                        <div class="preview-box" style="margin-top: 1rem;">
+                            <div class="preview-label">Preview:</div>
+                            {{ messages.get('account_ready_si', '')[:200] }}...
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="welcome_en" value="{{ messages.get('welcome_en', '') }}">
+                <input type="hidden" name="welcome_si" value="{{ messages.get('welcome_si', '') }}">
+                
+                <div class="action-buttons">
+                    <button type="submit" class="btn btn-primary">💾 Save Account Ready Messages</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleMessageSection('account')">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Advanced Language Customization (Collapsed by default) -->
+        <div class="message-card" onclick="toggleMessageSection('advanced')" style="margin-top: 2rem; border: 2px dashed var(--input-border);">
+            <div class="message-card-header">
+                <div>
+                    <h3>🔧 Advanced: All Bot Texts</h3>
+                    <p class="card-description">For advanced users: Customize every text message in the bot (buttons, labels, errors, etc.)</p>
+                </div>
+                <span class="toggle-icon" id="advanced-icon">▼</span>
+            </div>
+        </div>
+        <div class="message-content" id="advanced-content" style="display: none;">
+            <div style="padding: 1rem; background: var(--alert-error-bg); border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #f59e0b;">
+                <p style="margin: 0; color: var(--text-primary); font-size: 0.95rem;">
+                    ⚠️ <strong>Advanced Section:</strong> These settings allow you to customize every button label, message, and text in the bot. Only edit if you need full customization. Most users don't need to touch these settings.
+                </p>
+            </div>
+            {% include '_all_text_keys_grouped.html' %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">🔙 Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleMessageSection(section) {
+    const content = document.getElementById(section + '-content');
+    const icon = document.getElementById(section + '-icon');
+    
+    if (content.style.display === 'none' || content.style.display === '') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(180deg)';
+    } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
+
+<style>
+    .message-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .message-card {
+        background: var(--surface);
+        border: 2px solid var(--input-border);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .message-card:hover {
+        border-color: var(--accent-solid);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+    }
+
+    .message-card-header {
+        padding: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .message-card-header h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .card-description {
+        margin: 0.5rem 0 0 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .toggle-icon {
+        font-size: 1.5rem;
+        color: var(--accent-solid);
+        transition: transform 0.3s ease;
+        display: inline-block;
+    }
+
+    .message-content {
+        padding: 0 1.5rem 1.5rem 1.5rem;
+        background: var(--code-bg);
+        border-top: 1px solid var(--input-border);
+    }
+
+    .language-sections {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .language-sections {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .language-section {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+    }
+
+    .language-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .language-header .flag {
+        font-size: 2rem;
+    }
+
+    .language-header h4 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.1rem;
+    }
+
+    .form-section {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--input-border);
+        margin-top: 1rem;
+    }
+
+    .themed-textarea {
+        font-family: monospace;
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 6px;
+        background: var(--code-bg);
+        color: var(--text-primary);
+        resize: vertical;
+        font-size: 14px;
+        line-height: 1.6;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+    
+    .themed-textarea:focus {
+        outline: none;
+        border-color: var(--accent-solid);
+        box-shadow: var(--focus-ring);
+    }
+    
+    .help-text {
+        font-size: 0.9em;
+        color: var(--text-muted);
+        margin: 0.5rem 0;
+        line-height: 1.5;
+    }
+    
+    .preview-box {
+        background: var(--code-bg);
+        padding: 1rem;
+        border-radius: 6px;
+        border-left: 4px solid var(--accent-solid);
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: var(--text-secondary);
+        font-size: 0.9em;
+        line-height: 1.6;
+        border: 1px solid var(--input-border);
+    }
+
+    .preview-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .preview-box:empty::before {
+        content: 'No message set';
+        color: var(--text-muted);
+        font-style: italic;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--input-border);
+    }
+
+    .action-buttons .btn {
+        flex: 0 0 auto;
+    }
+</style>
+{% endblock %}

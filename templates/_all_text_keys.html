@@ -1,0 +1,49 @@
+{# Jinja2 partial for all bot text keys editing #}
+<div class="message-card" onclick="toggleMessageSection('all_texts')">
+    <div class="message-card-header">
+        <div>
+            <h3>📝 All Bot Texts</h3>
+            <p class="card-description">Edit any text shown to users (all languages)</p>
+        </div>
+        <span class="toggle-icon" id="all_texts-icon">▼</span>
+    </div>
+</div>
+<div class="message-content" id="all_texts-content" style="display: none;">
+    <form method="POST" action="{{ url_for('edit_messages') }}">
+        <div class="form-section">
+            <p class="help-text">You can override any text shown in the bot. Leave blank to use the default.</p>
+            <div class="language-sections">
+                <div class="language-section">
+                    <div class="language-header">
+                        <span class="flag">🇬🇧</span>
+                        <h4>English Texts</h4>
+                    </div>
+                    {% for key, default in all_text_keys_en.items() %}
+                        <div style="margin-bottom: 1.2rem;">
+                            <label for="{{ key }}_en"><b>{{ key }}</b></label>
+                            <textarea name="all_texts_en_{{ key }}" rows="2" class="themed-textarea" placeholder="{{ default }}">{{ messages.get('all_texts_en_' + key, '') }}</textarea>
+                            <div class="help-text">Default: {{ default }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="language-section">
+                    <div class="language-header">
+                        <span class="flag">🇱🇰</span>
+                        <h4>Sinhala Texts</h4>
+                    </div>
+                    {% for key, default in all_text_keys_si.items() %}
+                        <div style="margin-bottom: 1.2rem;">
+                            <label for="{{ key }}_si"><b>{{ key }}</b></label>
+                            <textarea name="all_texts_si_{{ key }}" rows="2" class="themed-textarea" placeholder="{{ default }}">{{ messages.get('all_texts_si_' + key, '') }}</textarea>
+                            <div class="help-text">Default: {{ default }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button type="submit" class="btn btn-primary">💾 Save All Texts</button>
+            <button type="button" class="btn btn-secondary" onclick="toggleMessageSection('all_texts')">Cancel</button>
+        </div>
+    </form>
+</div>

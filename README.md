@@ -17,6 +17,7 @@ This installer will:
 - clone/update project to `/opt/paid-bot`
 - create Python virtual environment and install requirements
 - create and start systemd services for bot + dashboard
+- ask for `telegram_bot_token` and `admin_ids` (optional, saves to `config.json`)
 - ask which storage mode you want (Firebase / migrate / local JSON)
 
 ## Storage Mode Options
@@ -33,6 +34,12 @@ During install you will see:
 STORAGE_MODE=migrate bash <(curl -Ls https://raw.githubusercontent.com/x-kevinbro/Paid-bot/main/install.sh)
 # or STORAGE_MODE=firebase
 # or STORAGE_MODE=json
+```
+
+### Non-interactive core settings (token/admin IDs)
+
+```bash
+BOT_TOKEN_INPUT="123456:ABCDEF" ADMIN_IDS_INPUT="123456789,987654321" bash <(curl -Ls https://raw.githubusercontent.com/x-kevinbro/Paid-bot/main/install.sh)
 ```
 
 ## Change Storage Mode Later (No Reinstall)

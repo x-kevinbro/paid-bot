@@ -12,6 +12,9 @@ DASHBOARD_SERVICE="${PROJECT_NAME}-dashboard.service"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 STORAGE_MODE="${STORAGE_MODE:-ask}"
 ACTION="${ACTION:-install}"
+CONFIGURE_CORE="${CONFIGURE_CORE:-ask}"
+BOT_TOKEN_INPUT="${BOT_TOKEN_INPUT:-}"
+ADMIN_IDS_INPUT="${ADMIN_IDS_INPUT:-}"
 SELECTED_STORAGE_MODE=""
 
 info() {
@@ -223,6 +226,89 @@ PY
   esac
 }
 
+configure_core_settings() {
+  local token_value="${BOT_TOKEN_INPUT}"
+  local admin_ids_value="${ADMIN_IDS_INPUT}"
+  local should_configure="yes"
+
+  if [[ "${ACTION}" != "install" ]]; then
+    return
+  fi
+
+  if [[ "${CONFIGURE_CORE}" == "no" ]]; then
+    should_configure="no"
+  elif [[ "${CONFIGURE_CORE}" == "ask" ]]; then
+    read -rp "Configure telegram_bot_token and admin_ids now? (Y/n): " configure_choice
+    configure_choice="${configure_choice:-y}"
+    if [[ ! "${configure_choice}" =~ ^[Yy]$ ]]; then
+      should_configure="no"
+    fi
+  fi
+
+  if [[ "${should_configure}" != "yes" ]]; then
+    return
+  fi
+
+  if [[ -z "${token_value}" ]]; then
+    read -rp "Enter Telegram bot token (leave empty to skip): " token_value
+  fi
+
+  if [[ -z "${admin_ids_value}" ]]; then
+    read -rp "Enter admin ID(s), comma-separated (e.g. 12345,67890). Leave empty to skip: " admin_ids_value
+  fi
+
+  if [[ -z "${token_value}" && -z "${admin_ids_value}" ]]; then
+    info "Skipped core settings update."
+    return
+  fi
+
+  info "Saving core settings to config.json..."
+  if "${INSTALL_DIR}/venv/bin/python" - <<'PY' "${INSTALL_DIR}" "${token_value}" "${admin_ids_value}"
+import json
+import os
+import re
+import sys
+
+project_dir = sys.argv[1]
+token = (sys.argv[2] or '').strip()
+admin_ids_raw = (sys.argv[3] or '').strip()
+config_path = os.path.join(project_dir, 'config.json')
+
+if not os.path.exists(config_path):
+    print("config.json not found")
+    sys.exit(1)
+
+with open(config_path, 'r', encoding='utf-8') as f:
+    config = json.load(f)
+
+if token:
+    config['telegram_bot_token'] = token
+
+if admin_ids_raw:
+    parts = [part.strip() for part in admin_ids_raw.split(',') if part.strip()]
+    if not parts:
+        print("No valid admin IDs provided")
+        sys.exit(1)
+    parsed_ids = []
+    for part in parts:
+        if not re.fullmatch(r'\d+', part):
+            print(f"Invalid admin ID: {part}")
+            sys.exit(1)
+        parsed_ids.append(int(part))
+    config['admin_ids'] = parsed_ids
+
+with open(config_path, 'w', encoding='utf-8') as f:
+    json.dump(config, f, indent=2, ensure_ascii=False)
+
+print("Core settings saved.")
+PY
+  then
+    info "Core settings saved successfully."
+  else
+    warn "Failed to save core settings. You can edit ${INSTALL_DIR}/config.json manually."
+  fi
+}
+
 create_systemd_services() {
   info "Creating systemd services..."
 
@@ -288,7 +374,26 @@ restart_services_if_present() {
   fi
 }
 
+get_public_ip() {
+  local ip=""
+
+  if command -v curl >/dev/null 2>&1; then
+    ip="$(curl -4 -fsS --max-time 4 https://api.ipify.org 2>/dev/null || true)"
+  fi
+
+  if [[ -z "${ip}" ]] && command -v hostname >/dev/null 2>&1; then
+    ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  fi
+
+  echo "${ip}"
+}
+
 print_summary() {
+  local dashboard_port="5000"
+  local public_ip=""
+
+  public_ip="$(get_public_ip)"
+
   echo
   info "Installation complete."
   echo "- Project directory : ${INSTALL_DIR}"
@@ -301,6 +406,20 @@ print_summary() {
   echo "  systemctl status ${DASHBOARD_SERVICE} --no-pager"
   echo "  journalctl -u ${BOT_SERVICE} -f"
   echo "  journalctl -u ${DASHBOARD_SERVICE} -f"
+  echo
+  echo "Dashboard login URLs:"
+  echo "  http://127.0.0.1:${dashboard_port}/login"
+  if [[ -n "${public_ip}" ]]; then
+    echo "  http://${public_ip}:${dashboard_port}/login"
+  fi
+  echo
+  echo "First-time setup (required):"
+  echo "  1) Edit ${INSTALL_DIR}/config.json"
+  echo "     - set telegram_bot_token"
+  echo "     - set at least one admin_id"
+  echo "  2) Restart services"
+  echo "     systemctl restart ${BOT_SERVICE} ${DASHBOARD_SERVICE}"
+  echo "  3) Open dashboard /login and send /active to your bot to get login code"
   echo
   echo "If needed, edit config then restart:"
   echo "  nano ${INSTALL_DIR}/config.json"
@@ -316,6 +435,7 @@ main() {
       ensure_project_files
       setup_virtualenv
       setup_config_files
+      configure_core_settings
       select_storage_mode
       apply_storage_mode
       create_systemd_services

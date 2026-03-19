@@ -31,6 +31,30 @@ FIREBASE_CRED_PATH = (
 )
 
 
+def _is_firebase_disabled() -> bool:
+    """Check env flags that explicitly disable Firebase usage."""
+    disable_flags = {
+        '1', 'true', 'yes', 'on'
+    }
+    false_flags = {
+        '0', 'false', 'no', 'off'
+    }
+
+    bot_disable = str(os.getenv('BOT_DISABLE_FIREBASE', '')).strip().lower()
+    if bot_disable in disable_flags:
+        return True
+
+    generic_disable = str(os.getenv('DISABLE_FIREBASE', '')).strip().lower()
+    if generic_disable in disable_flags:
+        return True
+
+    use_firebase = str(os.getenv('USE_FIREBASE', '')).strip().lower()
+    if use_firebase in false_flags:
+        return True
+
+    return False
+
+
 def _get_firebase_credentials_source() -> Optional[Dict[str, Any]]:
     """Return Firebase credentials from env JSON or file path."""
     cred_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
@@ -52,6 +76,12 @@ def init_firebase():
     global _firebase_initialized, _db, _use_firebase
     
     if _firebase_initialized:
+        return _use_firebase
+
+    if _is_firebase_disabled():
+        logger.info("ℹ️ Firebase explicitly disabled via environment variable. Using JSON file mode.")
+        _use_firebase = False
+        _firebase_initialized = True
         return _use_firebase
     
     try:

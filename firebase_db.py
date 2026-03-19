@@ -31,6 +31,47 @@ FIREBASE_CRED_PATH = (
 )
 
 
+def _extract_project_id(cred_source: Optional[Dict[str, Any]]) -> Optional[str]:
+    try:
+        if not cred_source:
+            return None
+        if cred_source.get('type') == 'json':
+            data = cred_source.get('value') or {}
+            return data.get('project_id')
+        path = cred_source.get('value')
+        if path and os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get('project_id')
+    except Exception:
+        return None
+    return None
+
+
+def _friendly_firebase_error(exc: Exception) -> str:
+    text = str(exc)
+    lowered = text.lower()
+
+    if 'consumer_invalid' in lowered or 'permission denied on resource project' in lowered:
+        return (
+            f"{text}\n\n"
+            "Likely fix:\n"
+            "1) Confirm this exact project exists and is active.\n"
+            "2) Enable Firestore API (firestore.googleapis.com).\n"
+            "3) Create Firestore database in Native mode.\n"
+            "4) Ensure billing is enabled if your org requires it.\n"
+            "5) Download a NEW service-account key from the same project and replace firebase-credentials.json."
+        )
+
+    if 'quota' in lowered or '429' in lowered:
+        return f"{text}\n\nLikely fix: Firebase quota exceeded; wait/reset quota or use JSON fallback temporarily."
+
+    if 'invalid_grant' in lowered or 'unauthenticated' in lowered or 'permission_denied' in lowered:
+        return f"{text}\n\nLikely fix: service-account key/project mismatch or missing IAM permissions for Firestore."
+
+    return text
+
+
 def _get_firebase_credentials_source() -> Optional[Dict[str, Any]]:
     """Return Firebase credentials from env JSON or file path."""
     cred_json = os.getenv('FIREBASE_CREDENTIALS_JSON')
@@ -64,12 +105,16 @@ def init_firebase():
             firebase_admin.initialize_app(cred)
             _db = firestore.client()
             _use_firebase = True
-            logger.info("✅ Firebase initialized successfully")
+            project_id = _extract_project_id(cred_source)
+            if project_id:
+                logger.info(f"✅ Firebase initialized successfully (project: {project_id})")
+            else:
+                logger.info("✅ Firebase initialized successfully")
         else:
             logger.warning("⚠️ Firebase credentials not found (file/env). Using JSON file fallback.")
             _use_firebase = False
     except Exception as e:
-        logger.error(f"❌ Failed to initialize Firebase: {e}")
+        logger.error(f"❌ Failed to initialize Firebase: {_friendly_firebase_error(e)}")
         _use_firebase = False
     
     _firebase_initialized = True
@@ -196,11 +241,16 @@ async def async_save_config(config: Dict[str, Any]):
 def get_firebase_status() -> Dict[str, Any]:
     """Get Firebase connection status"""
     init_firebase()
+    cred_source = _get_firebase_credentials_source()
+    project_id = _extract_project_id(cred_source)
     return {
         'initialized': _firebase_initialized,
         'using_firebase': _use_firebase,
-        'has_credentials': _get_firebase_credentials_source() is not None,
-        'fallback_available': os.path.exists(CONFIG_PATH)
+        'has_credentials': cred_source is not None,
+        'fallback_available': os.path.exists(CONFIG_PATH),
+        'credential_type': cred_source.get('type') if cred_source else None,
+        'credential_path': FIREBASE_CRED_PATH if (cred_source and cred_source.get('type') == 'file') else None,
+        'credential_project_id': project_id,
     }
 
 
@@ -231,8 +281,9 @@ def migrate_to_firebase():
         return True, f"Successfully migrated {len(config)} config keys to Firebase"
     
     except Exception as e:
-        logger.error(f"Migration error: {e}")
-        return False, str(e)
+        friendly = _friendly_firebase_error(e)
+        logger.error(f"Migration error: {friendly}")
+        return False, friendly
 
 
 # Collection-specific helpers for better organization (optional advanced usage)

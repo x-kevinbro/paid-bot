@@ -24,6 +24,12 @@ def main():
     print(f"   ✓ Using Firebase: {status['using_firebase']}")
     print(f"   ✓ Has credentials: {status['has_credentials']}")
     print(f"   ✓ JSON fallback available: {status['fallback_available']}")
+    if status.get('credential_type'):
+        print(f"   ✓ Credential type: {status.get('credential_type')}")
+    if status.get('credential_path'):
+        print(f"   ✓ Credential path: {status.get('credential_path')}")
+    if status.get('credential_project_id'):
+        print(f"   ✓ Credential project_id: {status.get('credential_project_id')}")
     
     if not status['has_credentials']:
         print("\n❌ ERROR: Firebase credentials not found!")
@@ -77,6 +83,12 @@ def main():
     else:
         print(f"\n❌ MIGRATION FAILED: {message}")
         print("The bot will continue using config.json")
+        if 'CONSUMER_INVALID' in message or 'Permission denied on resource project' in message:
+            print("\nQuick fix checklist:")
+            print("• Enable Firestore API in Google Cloud for this project")
+            print("• Create Firestore database (Native mode) in Firebase Console")
+            print("• Verify billing/project access is active")
+            print("• Replace firebase-credentials.json with a new key from the same project")
     
     print("\n" + "=" * 60)
 
